@@ -1,0 +1,109 @@
+#include <Wire.h>   
+#include <DHT.h>
+#include <LiquidCrystal_I2C.h>    // khai bao thu vien lcd sử dụng i2c
+LiquidCrystal_I2C lcd(0x27,16,2);
+
+#define motor 6 //10
+#define in3 5   //9 
+#define in4 4   //8
+
+int Ledpin[]= { 13, 12, 11};
+int i;
+
+const int DHTPIN = 3;       // sử dụng chân số 6
+const int DHTTYPE = DHT11;   // loại cảm biến được sử dụng là dht11
+DHT dht(DHTPIN, DHTTYPE);
+
+byte degree[8] = {     
+  0B01110,
+  0B01010,
+  0B01110,
+  0B00000,
+  0B00000,
+  0B00000,
+  0B00000,
+  0B00000
+};
+void setup()
+{
+  lcd.begin();          // khoi tạo lcd
+  dht.begin();
+  lcd.backlight();     // bật đèn lcd
+  lcd.createChar( 0, degree);
+  for( i= 0; i< 3; i++)
+  {
+      pinMode( Ledpin[ i], OUTPUT);
+  }
+  
+  pinMode( motor, OUTPUT);
+  pinMode( in3, OUTPUT);
+  pinMode( in4, OUTPUT);
+  digitalWrite( in3, LOW);
+  digitalWrite( in4, HIGH);
+}
+
+void hienthichuoi( String chuoi)
+{
+  for( int j= 0; j< chuoi.length(); j++)
+  {
+    lcd.print( chuoi[ j]);
+  }
+}
+
+void hienthiso( int so)
+{
+  String chuoi= String( so);
+  for( int j= 0; j< chuoi.length(); j++)
+  {
+    lcd.print( chuoi[ j]);
+  }
+}
+
+String str1= "Quat bat";
+String str2= "Quat tat";
+String str3= "Temp: ";
+
+int count= 0;   // biến lưu số lần nhấn button
+int button_State= 0;
+
+void loop()
+{
+  int t = dht.readTemperature();  // nhiệt độ
+  int reading = analogRead(A0); 
+  //float temperature = ( 5.0* reading* 100.0/ 1024.0)- 70; 
+  int value = map( reading, 0, 1023, 0, 255); 
+      
+  if( round( t) > 10 )
+  {
+      lcd.clear();
+      analogWrite( motor, 60);
+      digitalWrite( Ledpin[ 0], HIGH);
+      digitalWrite( Ledpin[ 1], LOW);
+      lcd.setCursor( 0, 0);
+      hienthichuoi( str1);
+      lcd.setCursor( 0, 1);
+      hienthichuoi( str3);
+      lcd.setCursor( 6, 1);
+      hienthiso( round( t));
+      lcd.write( byte( 0));
+      lcd.print( "C");
+      delay( 5000);
+      
+   }
+   else
+   {
+      lcd.clear();
+      analogWrite( motor, 0);
+      digitalWrite( Ledpin[ 0], LOW);
+      digitalWrite( Ledpin[ 1], HIGH);
+      lcd.setCursor( 0, 0);
+      hienthichuoi( str2);
+      lcd.setCursor( 0, 1);
+      hienthichuoi( str3);
+      lcd.setCursor( 6, 1);
+      hienthiso( round( t));
+      lcd.write( byte( 0));
+      lcd.print( "C");
+      delay( 1000);
+    }
+}

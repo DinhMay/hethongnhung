@@ -1,0 +1,99 @@
+#include <ESP8266WiFi.h>
+#include <ESP8266WebServer.h>
+#include <DHT.h>
+#include <Wire.h>
+
+
+#define in4 9
+#define in3 8
+#define DHTPIN 11
+#define DHTTYPE DHT11
+
+DHT dht(DHTPIN, DHTTYPE);
+
+const char *ssid = "Galaxy A235A0C";
+const char *password = "12345678";
+
+ESP8266WebServer server(80);
+
+void handleRoot() {
+  float h = dht.readHumidity();
+  float t = dht.readTemperature();
+
+  String html = "<html style='font-family: Arial, Helvetica, sans-serif; margin: 0px auto; text-align: center;'>";
+  html += "<head><title> WEBSERVER </title></head>";
+  html += "<body>";
+
+  // Thêm container
+  html += "<div style='width: 80%; margin: auto; padding: 20px; background-color: #f0f0f0;'>";
+
+  html += "<H1 style='color:darkred'> ESP8266 WEBSERVER </H1>";
+  html += "<H2> Nhom hoc phan IOT </H2>";
+  html += "<H3> He thong dieu khien quat tu dong </H3>";
+  html += "<B> Temperature: ";
+  html += t;
+  html += " *C</B><br>";
+  html += "<B> Humidity: ";
+  html += h;
+  html += "%</B><br><br>";
+  html += "<button type='button' onclick='motorControl(\"on\")'> motor on </button>";
+  html += "<button type='button' onclick='motorControl(\"off\")'> motor off </button>";
+
+  // Đóng container
+  html += "</div>";
+  
+  html += "<script>";
+  html += "function motorControl(command) {";
+  html += "  var xhttp = new XMLHttpRequest();";
+  html += "  xhttp.open('GET', '/motor?command=' + command, true);";
+  html += "  xhttp.send();";
+  html += "}";
+  html += "</script>";
+  
+  html += "</body>";
+  html += "</html>";
+
+  server.send(200, "text/html", html);
+}
+
+
+void setup() {
+  Serial.begin(9600);
+  dht.begin();
+
+  Serial.println();
+  Serial.println();
+  Serial.print("Connecting to ");
+  Serial.println(ssid);
+
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("");
+  Serial.println("WiFi connected");
+
+  // Cấu hình chân PWM cho động cơ
+ 
+  pinMode( in3, OUTPUT);
+  pinMode( in4, OUTPUT);
+  digitalWrite( in3, LOW);
+  digitalWrite( in4, HIGH);
+  analogWriteRange(255); // Đặt phạm vi PWM từ 0 đến 255
+  analogWriteFreq(1000); // Đặt tần số PWM (1 kHz)
+
+  server.on("/", HTTP_GET, handleRoot);
+  // server.on("/motor", HTTP_GET, motorControl);
+
+  server.begin();
+  Serial.println("Server started");
+  Serial.print("Use this URL to connect: ");
+  Serial.print("http://");
+  Serial.print(WiFi.localIP());
+  Serial.println("/");
+}
+
+void loop() {
+  server.handleClient();
+}
